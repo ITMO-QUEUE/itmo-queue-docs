@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1390" width="1400" height="1390"><title>ITMO.Queue — карта страниц</title><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#466179"/></marker></defs><rect width="100%" height="100%" fill="white"/>
+<text x="55" y="48" font-family="Arial,sans-serif" font-size="32" fill="#23384b" font-weight="700">ITMO.Queue   /   Карта страниц MVP</text>
+<text x="55" y="79" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Для обсуждения · по итогам встречи 26 октября 2026 · пути предложены для маршрутизации</text>
+<rect x="455" y="106" width="490" height="124" rx="9" fill="#eff6fd" stroke="#295f99" stroke-width="2" />
+<text x="473" y="136" font-family="Arial,sans-serif" font-size="20" fill="#295f99" font-weight="700">Вход и регистрация</text>
+<text x="473" y="160" font-family="Arial,sans-serif" font-size="15" fill="#295f99" font-weight="400">/auth</text>
+<text x="473" y="192" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Две формы на одной странице. После входа</text>
+<text x="473" y="215" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">назначенная роль определяет кабинет.</text>
+<text x="78" y="295" font-family="Arial,sans-serif" font-size="21" fill="#295f99" font-weight="700">01   СТУДЕНТ</text>
+<text x="765" y="295" font-family="Arial,sans-serif" font-size="21" fill="#176559" font-weight="700">02   ПРЕПОДАВАТЕЛЬ</text>
+<rect x="78" y="320" width="535" height="178" rx="9" fill="#eff6fd" stroke="#295f99" stroke-width="2" />
+<text x="96" y="350" font-family="Arial,sans-serif" font-size="20" fill="#295f99" font-weight="700">Мои записи</text>
+<text x="96" y="374" font-family="Arial,sans-serif" font-size="15" fill="#295f99" font-weight="400">/student</text>
+<text x="96" y="406" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Свои активные и предстоящие записи, фильтры.</text>
+<text x="96" y="429" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">При старте защиты — плашка «Открыть запись».</text>
+<text x="96" y="452" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Выход из очереди доступен по правилам топ-3.</text>
+<rect x="765" y="320" width="558" height="365" rx="9" fill="#eff8f5" stroke="#176559" stroke-width="2" />
+<text x="783" y="350" font-family="Arial,sans-serif" font-size="20" fill="#176559" font-weight="700">Мои очереди</text>
+<text x="783" y="374" font-family="Arial,sans-serif" font-size="15" fill="#176559" font-weight="400">/teacher</text>
+<text x="783" y="406" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Созданные и назначенные сеансы. Приглашение</text>
+<text x="783" y="429" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">со-преподавателю → подтвердить участие.</text>
+<text x="783" y="452" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Выбрать сеанс или нажать «Создать очередь».</text>
+<rect x="795" y="468" width="500" height="190" rx="9" fill="#fff6e9" stroke="#99551f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="813" y="498" font-family="Arial,sans-serif" font-size="20" fill="#99551f" font-weight="700">Создать очередь</text>
+<text x="813" y="522" font-family="Arial,sans-serif" font-size="15" fill="#99551f" font-weight="400">МОДАЛЬНОЕ ОКНО · без нового маршрута</text>
+<text x="813" y="554" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Дисциплина, работы и приоритеты, принимающие,</text>
+<text x="813" y="577" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">квота, время и место защиты.</text>
+<text x="813" y="600" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Отмена → закрыть окно и остаться в списке.</text>
+<text x="813" y="623" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Успех → открыть управление созданной очередью.</text>
+<rect x="78" y="575" width="535" height="133" rx="9" fill="#eff6fd" stroke="#295f99" stroke-width="2" />
+<text x="96" y="605" font-family="Arial,sans-serif" font-size="20" fill="#295f99" font-weight="700">Найти очередь</text>
+<text x="96" y="629" font-family="Arial,sans-serif" font-size="15" fill="#295f99" font-weight="400">/student/queues</text>
+<text x="96" y="661" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Каталог доступных сеансов. Фильтры по предмету,</text>
+<text x="96" y="684" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">преподавателю и потоку. Открыть выбранную очередь.</text>
+<rect x="78" y="775" width="535" height="244" rx="9" fill="#eff6fd" stroke="#295f99" stroke-width="2" />
+<text x="96" y="805" font-family="Arial,sans-serif" font-size="20" fill="#295f99" font-weight="700">Конкретная очередь / моя запись</text>
+<text x="96" y="829" font-family="Arial,sans-serif" font-size="15" fill="#295f99" font-weight="400">/student/queues/:queueId</text>
+<text x="96" y="861" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">До записи: выбрать работы и загрузить отчёт.</text>
+<text x="96" y="884" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">При превышении квоты — предупреждение, запись</text>
+<text x="96" y="907" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">разрешена. Резерв отмечен подписью и границей.</text>
+<text x="96" y="930" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">После записи: место, ожидание, вызов и артефакты.</text>
+<text x="96" y="953" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Выход, перенос в конец и обмен — вне топ-3,</text>
+<text x="96" y="976" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">пока студент ожидает и ещё не вызван.</text>
+<rect x="765" y="775" width="558" height="244" rx="9" fill="#eff8f5" stroke="#176559" stroke-width="2" />
+<text x="783" y="805" font-family="Arial,sans-serif" font-size="20" fill="#176559" font-weight="700">Управление очередью</text>
+<text x="783" y="829" font-family="Arial,sans-serif" font-size="15" fill="#176559" font-weight="400">/teacher/queues/:queueId</text>
+<text x="783" y="861" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Список участников, артефакты, текущие защиты.</text>
+<text x="783" y="884" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Вручную: открыть/закрыть запись, начать/завершить</text>
+<text x="783" y="907" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">сеанс. Вызов вне очереди — с подтверждением.</text>
+<text x="783" y="930" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Результаты по работам и история — внутри сеанса.</text>
+<text x="783" y="953" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Подтвердивший участие со-преподаватель сохраняет</text>
+<text x="783" y="976" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">права управления, даже если создатель вышел.</text>
+<rect x="78" y="1092" width="535" height="116" rx="9" fill="#eff6fd" stroke="#295f99" stroke-width="2" />
+<text x="96" y="1122" font-family="Arial,sans-serif" font-size="20" fill="#295f99" font-weight="700">История попыток</text>
+<text x="96" y="1146" font-family="Arial,sans-serif" font-size="15" fill="#295f99" font-weight="400">/student/history</text>
+<text x="96" y="1178" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Календарь сдач, работы, результаты и неявки.</text>
+<rect x="78" y="1234" width="535" height="106" rx="9" fill="#eff6fd" stroke="#295f99" stroke-width="2" />
+<text x="96" y="1264" font-family="Arial,sans-serif" font-size="20" fill="#295f99" font-weight="700">Профиль студента</text>
+<text x="96" y="1288" font-family="Arial,sans-serif" font-size="15" fill="#295f99" font-weight="400">/student/profile</text>
+<text x="96" y="1320" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Аккаунт, настройки и выход → /auth.</text>
+<rect x="765" y="1092" width="558" height="116" rx="9" fill="#eff8f5" stroke="#176559" stroke-width="2" />
+<text x="783" y="1122" font-family="Arial,sans-serif" font-size="20" fill="#176559" font-weight="700">Профиль преподавателя</text>
+<text x="783" y="1146" font-family="Arial,sans-serif" font-size="15" fill="#176559" font-weight="400">/teacher/profile</text>
+<text x="783" y="1178" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Аккаунт, настройки и выход → /auth.</text>
+<polyline fill="none" stroke="#466179" stroke-width="2" marker-end="url(#a)" points="500,230 500,256 345,256 345,320"/>
+<polyline fill="none" stroke="#466179" stroke-width="2" marker-end="url(#a)" points="900,230 900,256 1050,256 1050,320"/>
+<polyline fill="none" stroke="#466179" stroke-width="2" marker-end="url(#a)" points="345,498 345,575"/>
+<text x="362" y="542" font-family="Arial,sans-serif" font-size="15" fill="#23384b" font-weight="400">Найти новую очередь</text>
+<polyline fill="none" stroke="#466179" stroke-width="2" marker-end="url(#a)" points="345,708 345,775"/>
+<text x="361" y="749" font-family="Arial,sans-serif" font-size="15" fill="#23384b" font-weight="400">Открыть</text>
+<polyline fill="none" stroke="#466179" stroke-width="2" marker-end="url(#a)" points="78,422 39,422 39,888 78,888"/>
+<polyline fill="none" stroke="#466179" stroke-width="2" marker-end="url(#a)" points="1323,411 1352,411 1352,872 1323,872"/>
+<polyline fill="none" stroke="#466179" stroke-width="2" marker-end="url(#a)" points="1045,658 1045,775"/>
+<text x="1060" y="736" font-family="Arial,sans-serif" font-size="15" fill="#23384b" font-weight="400">Создано</text>
+<text x="78" y="1065" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="700">Также из бокового меню студента:</text>
+<text x="765" y="1065" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="700">Из меню преподавателя:</text>
+<text x="767" y="1260" font-family="Arial,sans-serif" font-size="20" fill="#23384b" font-weight="700">Общие переходы</text>
+<text x="767" y="1294" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">/ → вход или кабинет по роли. Неизвестный путь → 404.</text>
+<text x="767" y="1322" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Нет доступа к сеансу → сообщение и возврат в кабинет.</text>
+<text x="55" y="1374" font-family="Arial,sans-serif" font-size="16" fill="#23384b" font-weight="400">Стрелка — переход между страницами. Пунктирная карточка внутри кабинета — окно поверх страницы.</text>
+</svg>
