@@ -1,0 +1,248 @@
+{
+	"endpoints": [
+		{
+			"description": "Вход в аккаунт",
+			"method": "POST",
+			"path": "hostname/auth",
+			"data": {
+				"login": {
+					"comment": "Табельный номер студента",
+					"validation": {
+						"comment": "6-тизначный набор целых чисел, тип строка, т.к. может начинаться с нулей",
+						"type": "string",
+						"minLength": 6,
+						"maxLength": 6
+					},
+					"unique": true
+				},
+				"password": {
+					"comment": "Пароль от itmo.id",
+					"validation": {
+						"comment": "Валидация такая же, как в itmo.id, главное, чтобы было совпадение",
+						"type": "string"
+					},
+					"unique": false
+				}
+			}
+		},
+		{
+			"description": "Получение данных о текущем пользователе",
+			"method": "GET",
+			"path": "hostname/me",
+			"data": {
+				"login": { "description": "Табельный номер", "type": "string" },
+				"firstName": { "description": "Имя", "type": "string" },
+				"secondName": { "description": "Фамилия", "type": "string" },
+				"patronymic": { "description": "Отчество", "type": "string" },
+				"role": { "description": "Роль", "type": "enum(teacher, student)" },
+				"isBanned": { "description": "Наличие бана", "type": "boolean" }
+			}
+		},
+		{
+			"description": "Получение данных о всех существующих очередях",
+			"method": "GET",
+			"path": "hostname/queues",
+			"roles": ["student"],
+			"data": {
+				"queues": {
+					"type": "array(Queue)",
+					"data": {
+						"discipline": { "type": "string" },
+						"startsAt": {
+							"description": "Время начала работы",
+							"type": "ISODateString"
+						},
+						"endsAt": {
+							"description": "Время завершения работы",
+							"type": "ISODateString"
+						},
+						"teachers": {
+							"description": "Принимающие преподаватели",
+							"type": "array(Teacher)",
+							"data": {
+								"firstName": { "type": "string" },
+								"secondName": { "type": "string" },
+								"patronymic": { "type": "string" }
+							}
+						},
+						"location": {
+							"description": "Место проведения",
+							"isOnline": { "type": "boolean" },
+							"address": {
+								"description": "Адрес корпуса",
+								"comment": "null, если isOnline = true; адреса корпусов можно вынести в enum",
+								"type": "string",
+								"nullable": true
+							},
+							"auditorium": {
+								"comment": "null, если isOnline = true",
+								"type": "string",
+								"nullable": true
+							},
+							"streamLink": {
+								"comment": "null, если isOnline = false",
+								"type": "URLString",
+								"nullable": true
+							}
+						},
+						"queueTotalNumber": {
+							"description": "Всего доступных мест в очереди",
+							"type": "integer",
+							"nullable": true
+						},
+						"isRegistrationOpened": { "type": "boolean" },
+						"queueStatus": { "type": "enum(preregistration, pause, completed)" }
+					}
+				}
+			}
+		},
+		{
+			"description": "Получение данных о очередях студента",
+			"roles": ["student"],
+			"method": "GET",
+			"path": "hostname/students/:studentId/queues",
+			"data": {
+				"queues": {
+					"type": "array(StudentQueue)",
+					"data": {
+						"generalData": {
+							"discipline": { "type": "string" },
+							"startsAt": {
+								"description": "Время начала работы",
+								"type": "ISODateString"
+							},
+							"endsAt": {
+								"description": "Время завершения работы",
+								"type": "ISODateString"
+							},
+							"teachers": {
+								"description": "Принимающие преподаватели",
+								"type": "array(QueueTeacher)",
+								"data": {
+									"firstName": { "type": "string" },
+									"secondName": { "type": "string" },
+									"patronymic": { "type": "string" }
+								}
+							},
+							"location": {
+								"description": "Место проведения",
+								"isOnline": { "type": "boolean" },
+								"address": {
+									"description": "Адрес корпуса",
+									"comment": "null, если isOnline = true; адреса корпусов можно вынести в enum",
+									"type": "string",
+									"nullable": true
+								},
+								"auditorium": {
+									"comment": "null, если isOnline = true",
+									"type": "string",
+									"nullable": true
+								},
+								"streamLink": {
+									"comment": "null, если isOnline = false",
+									"type": "URLString",
+									"nullable": true
+								}
+							},
+							"queueTotalNumber": {
+								"description": "Всего доступных мест в очереди",
+								"type": "integer",
+								"nullable": true
+							},
+							"isRegistrationOpened": { "type": "boolean" },
+							"queueStatus": {
+								"type": "enum(preregistration, pause, completed)"
+							}
+						},
+						"studentRelatedData": {
+							"works": {
+								"description": "Работы, которые студент записан сдавать",
+								"type": "array(Work)",
+								"data": {
+									"name": {
+										"description": "Название работы",
+										"type": "string"
+									},
+									"number": {
+										"description": "Номер работы",
+										"type": "integer"
+									},
+									"attachmentUrl": {
+										"description": "Ссылка на артефакт",
+										"type": "string"
+									}
+								}
+							},
+
+							"queueNumber": {
+								"description": "Место студента в очереди",
+								"type": "integer"
+							},
+							"moveUsedAt": {
+								"description": "Время использования перехода в конец очереди",
+								"type": "ISODateString",
+								"nullable": true
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"description": "Получение истории сдач студента",
+			"method": "GET",
+			"path": "hostname/students/:studentId/history?date&discipline&work",
+			"query": {
+				"date": {
+					"description": "Дата проведения защиты",
+					"type": "string",
+					"format": "YYYY-MM-DD"
+				},
+				"discipline": { "type": "string" },
+				"work": { "description": "Номер работы", "type": "integer" }
+			},
+			"data": {
+				"queues": {
+					"type": "array(HistoryQueue)",
+					"data": {
+						"works": {
+							"type": "array(Work)",
+							"data": {
+								"name": { "description": "Название работы", "type": "string" },
+								"number": { "description": "Номер работы", "type": "integer" },
+								"attachmentUrl": {
+									"description": "Ссылка на артефакт",
+									"type": "string"
+								}
+							}
+						},
+						"discipline": { "type": "string" },
+						"endsAt": {
+							"description": "Время завершения работы",
+							"type": "ISODateString"
+						},
+						"teachers": {
+							"description": "Принимающие преподаватели",
+							"type": "array(Teacher)",
+							"data": {
+								"firstName": { "type": "string" },
+								"secondName": { "type": "string" },
+								"patronymic": { "type": "string" }
+							}
+						},
+						"result": {
+							"comment": "null означает неявку",
+							"description": "Результат защиты",
+							"type": "int",
+							"nullable": true
+						},
+						"maxPoints": {
+							"description": "Максимум баллов за работу",
+							"type": "int"
+						}
+					}
+				}
+			}
+		}
+	]
+}
