@@ -1,0 +1,836 @@
+openapi: 3.1.0
+info:
+  title: ITMO Queue API
+  version: 1.0.0
+  description: |
+    REST API и SSE-потоки электронной очереди.
+    **Матрица ролей:**
+    - `Admin` — полный доступ ко всем маршрутам.
+    - `Teacher` — преподаватель.
+    - `Student` — студент.
+
+security:
+  - SessionAuth: []
+
+paths:
+  # Авторизация
+
+  /auth/login:
+    post:
+      summary: Вход в аккаунт и создание сессии
+      description: Доступно всем (неавторизованным пользователям).
+      security: []
+      x-roles: [public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginCredentials'
+      responses:
+        '200':
+          description: Успешный вход, сессия создана
+          headers:
+            Set-Cookie:
+              description: Устанавливает sessionId в HttpOnly cookie
+              schema:
+                type: string
+                example: sessionId=a1b2c3d4e5f6; Path=/; HttpOnly; Secure; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          description: Неверный табельный номер или пароль
+
+  /auth/register:
+    post:
+      summary: Регистрация нового пользователя
+      description: Доступно только пользователям с ролью `Admin`.
+      x-roles: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserRequest'
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Ошибка валидации данных
+        '401':
+          description: Пользователь не авторизован
+        '403':
+          description: Недостаточно прав (требуется роль Admin)
+        '409':
+          description: Пользователь с таким табельным номером уже существует
+
+  /auth/logout:
+    post:
+      summary: Завершение сессии (выход из аккаунта)
+      description: Доступно всем авторизованным пользователям (`Student`, `Teacher`, `Admin`).
+      x-roles: [Student, Teacher, Admin]
+      responses:
+        '204':
+          description: Сессия успешно удалена
+        '401':
+          description: Пользователь не авторизован
+
+  # Текущий пользователь
+
+  /me:
+    get:
+      summary: Получение данных о текущем авторизованном пользователе
+      description: Доступно всем авторизованным пользователям (`Student`, `Teacher`, `Admin`).
+      x-roles: [Student, Teacher, Admin]
+      responses:
+        '200':
+          description: Профиль текущего пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Сессия недействительна или истекла
+
+  # Очереди
+
+  /queues:
+    get:
+      summary: Получение данных о всех существующих очередях
+      description: Доступно всем авторизованным пользователям (`Student`, `Teacher`, `Admin`).
+      x-roles: [Student, Teacher, Admin]
+      responses:
+        '200':
+          description: Список очередей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Queue'
+        '401':
+          description: Сессия недействительна или истекла
+
+    post:
+      summary: Создание новой очереди
+      description: Доступно пользователям с ролью `Teacher` и `Admin`.
+      x-roles: [Teacher, Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQueueRequest'
+      responses:
+        '201':
+          description: Очередь успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+        '400':
+          description: Ошибка валидации данных
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав (требуется роль Teacher или Admin)
+
+  /me/queues:
+    get:
+      summary: Получение данных об очередях текущего студента
+      description: Доступно пользователям с ролью `Student` и `Admin`.
+      x-roles: [Student, Admin]
+      responses:
+        '200':
+          description: Список очередей, в которых участвует текущий студент
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentQueue'
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав
+
+  /students/{studentId}/queues:
+    get:
+      summary: Получение данных об очередях конкретного студента
+      description: Доступно только пользователям с ролью `Admin`.
+      x-roles: [Admin]
+      parameters:
+        - $ref: '#/components/parameters/StudentIdPath'
+      responses:
+        '200':
+          description: Список очередей студента
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentQueue'
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав (требуется роль Admin)
+        '404':
+          description: Студент не найден
+
+  /queues/{queueId}:
+    patch:
+      summary: Изменение параметров или статуса очереди
+      description: Доступно принимающим преподавателям этой очереди (`Teacher`) и `Admin`.
+      x-roles: [Teacher, Admin]
+      parameters:
+        - $ref: '#/components/parameters/QueueIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQueueRequest'
+      responses:
+        '200':
+          description: Очередь обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+        '400':
+          description: Ошибка валидации данных
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Очередь не найдена
+
+  /queues/{queueId}/stream:
+    get:
+      summary: Подписка на динамические обновления очереди (SSE)
+      description: |
+        Server-Sent Events (`text/event-stream`) поток для получения обновлений состояния очереди в реальном времени.
+        Подробный формат событий описан в `itmo-queue-asyncapi.yaml`.
+      x-roles: [Student, Teacher, Admin]
+      parameters:
+        - $ref: '#/components/parameters/QueueIdPath'
+      responses:
+        '200':
+          description: Поток событий SSE установлен
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  event: queue.updated
+                  data: {"queueId": 42, "queueStatus": "Active", "students": []}
+        '401':
+          description: Сессия недействительна или истекла
+        '404':
+          description: Очередь не найдена
+
+  # Действия студента в очереди
+
+  /queues/{queueId}/entries:
+    post:
+      summary: Запись студента в очередь
+      description: Доступно пользователям с ролью `Student` и `Admin` (если нет бана и регистрация открыта).
+      x-roles: [Student, Admin]
+      parameters:
+        - $ref: '#/components/parameters/QueueIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinQueueRequest'
+      responses:
+        '201':
+          description: Студент успешно записан в очередь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentQueue'
+        '400':
+          description: Не переданы работы или не приложен обязательный артефакт (`isArtifactRequired = true`)
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Запись закрыта (`isRegistrationOpened = false`), пользователь забанен (`isBanned = true`) или нет прав
+        '404':
+          description: Очередь не найдена
+        '409':
+          description: Студент уже состоит в этой очереди или достигнут лимит мест (`maxStudents`)
+
+  /queues/{queueId}/entries/me:
+    delete:
+      summary: Выход студента из очереди (отмена записи)
+      description: Доступно текущему записанному студенту (`Student`) и `Admin`.
+      x-roles: [Student, Admin]
+      parameters:
+        - $ref: '#/components/parameters/QueueIdPath'
+      responses:
+        '204':
+          description: Запись отменена, студент удалён из очереди
+        '401':
+          description: Сессия недействительна или истекла
+        '404':
+          description: Очередь не найдена или студент в ней не состоит
+        '409':
+          description: Нельзя выйти из очереди во время защиты (`Defending`)
+
+  /queues/{queueId}/entries/me/move-to-end:
+    post:
+      summary: Перенос себя в конец очереди
+      description: Доступно студенту (`Student`) и `Admin`, если он ещё не использовал перенос (`moveUsedAt == null`) и не находится в первой тройке сдающих (`queueNumber > 3`).
+      x-roles: [Student, Admin]
+      parameters:
+        - $ref: '#/components/parameters/QueueIdPath'
+      responses:
+        '200':
+          description: Позиция обновлена, студент перемещён в конец очереди
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentQueue'
+        '401':
+          description: Сессия недействительна или истекла
+        '404':
+          description: Очередь не найдена или студент в ней не состоит
+        '409':
+          description: Перенос в конец уже был использован ранее или статус/позиция не позволяют перемещение
+
+  /queues/{queueId}/entries/me/switch/{queueNumber}:
+    post:
+      summary: Предложить студенту на указанной позиции поменяться местами в очереди (REST fallback)
+      description: |
+        Создаёт предложение об обмене местами с участником на позиции `queueNumber`. Основной канал обмена — WebSocket (`/ws/me`).
+        Условия:
+        - Позиция инициатора `queueNumber >= 3`.
+        - Целевая позиция `queueNumber >= 3` и не равна позиции инициатора.
+        - Оба участника в статусе `Waiting`.
+      x-roles: [Student, Admin]
+      parameters:
+        - $ref: '#/components/parameters/QueueIdPath'
+        - $ref: '#/components/parameters/TargetQueueNumberPath'
+      responses:
+        '201':
+          description: Предложение об обмене местами успешно создано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwitchRequest'
+        '400':
+          description: Некорректный номер позиции (`queueNumber < 3` или указана собственная позиция)
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав или пользователь забанен (`isBanned = true`)
+        '404':
+          description: Очередь не найдена, текущий пользователь не состоит в ней или на позиции `queueNumber` нет студента
+        '409':
+          description: Обмен невозможен (позиция инициатора < 3, статус не `Waiting` или активный запрос уже существует)
+
+  # Управление участниками очереди и выставление оценок
+
+  /queues/{queueId}/students/{studentId}:
+    patch:
+      summary: Изменение статуса участника очереди (вызов к доске, начало защиты)
+      description: Доступно преподавателям (`Teacher`) и `Admin`.
+      x-roles: [Teacher, Admin]
+      parameters:
+        - $ref: '#/components/parameters/QueueIdPath'
+        - $ref: '#/components/parameters/StudentIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateParticipantStatusRequest'
+      responses:
+        '200':
+          description: Статус участника обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueStudent'
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Очередь или участник не найдены
+
+  /queues/{queueId}/students/{studentId}/evaluate:
+    post:
+      summary: Выставление оценок за работы или фиксация неявки
+      description: Доступно преподавателям (`Teacher`) и `Admin`. Переводит участника в статус `Accepted` или `Absent` и создаёт записи в истории сдач (`StudentAttempt`).
+      x-roles: [Teacher, Admin]
+      parameters:
+        - $ref: '#/components/parameters/QueueIdPath'
+        - $ref: '#/components/parameters/StudentIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateStudentRequest'
+      responses:
+        '200':
+          description: Результаты защиты зафиксированы
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentAttempt'
+        '400':
+          description: Некорректные баллы (например, больше `maxPoints` или статус `Absent` с ненулевыми баллами)
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав
+        '404':
+          description: Очередь или участник не найдены
+
+  # История сдач
+
+  /me/history:
+    get:
+      summary: Получение истории сдач текущего студента
+      description: Доступно пользователям с ролью `Student` и `Admin`.
+      x-roles: [Student, Admin]
+      parameters:
+        - $ref: '#/components/parameters/HistoryDateFilter'
+        - $ref: '#/components/parameters/HistoryDisciplineFilter'
+        - $ref: '#/components/parameters/HistoryWorkFilter'
+      responses:
+        '200':
+          description: История защит текущего студента
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentAttempt'
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав
+
+  /students/{studentId}/history:
+    get:
+      summary: Получение истории сдач конкретного студента
+      description: Доступно только пользователям с ролью `Admin`.
+      x-roles: [Admin]
+      parameters:
+        - $ref: '#/components/parameters/StudentIdPath'
+        - $ref: '#/components/parameters/HistoryDateFilter'
+        - $ref: '#/components/parameters/HistoryDisciplineFilter'
+        - $ref: '#/components/parameters/HistoryWorkFilter'
+      responses:
+        '200':
+          description: История защит студента
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentAttempt'
+        '401':
+          description: Сессия недействительна или истекла
+        '403':
+          description: Недостаточно прав (требуется роль Admin)
+        '404':
+          description: Студент не найден
+
+components:
+  securitySchemes:
+    SessionAuth:
+      type: apiKey
+      in: cookie
+      name: sessionId
+
+  parameters:
+    StudentIdPath:
+      name: studentId
+      in: path
+      required: true
+      description: Идентификатор студента
+      schema:
+        type: integer
+
+    QueueIdPath:
+      name: queueId
+      in: path
+      required: true
+      description: Идентификатор очереди
+      schema:
+        type: integer
+
+    TargetQueueNumberPath:
+      name: queueNumber
+      in: path
+      required: true
+      description: Целевой номер места в очереди для обмена (не ниже 3 включительно)
+      schema:
+        type: integer
+        minimum: 3
+        examples: [4]
+
+    HistoryDateFilter:
+      name: date
+      in: query
+      required: false
+      description: Дата проведения защиты
+      schema:
+        type: string
+        format: date
+        examples: ['2026-11-15']
+
+    HistoryDisciplineFilter:
+      name: discipline
+      in: query
+      required: false
+      description: Название дисциплины
+      schema:
+        type: string
+
+    HistoryWorkFilter:
+      name: work
+      in: query
+      required: false
+      description: Номер работы
+      schema:
+        type: integer
+
+  schemas:
+    Role:
+      type: string
+      enum: ['Student', 'Teacher', 'Admin']
+      description: Роль пользователя в системе
+
+    QueueStatus:
+      type: string
+      enum: ['Preregistration', 'Active', 'Paused', 'Completed']
+      description: Статус очереди
+
+    ParticipantStatus:
+      type: string
+      enum: ['Waiting', 'Called', 'Defending', 'Accepted', 'Absent']
+      description: Статус участника очереди
+
+    AttemptStatus:
+      type: string
+      enum: ['Accepted', 'Absent']
+      description: Статус попытки студента
+
+    SwitchRequestStatus:
+      type: string
+      enum: ['Pending', 'Accepted', 'Rejected', 'Cancelled', 'Expired']
+      description: Статус предложения об обмене местами
+
+    LoginCredentials:
+      type: object
+      required: [login, password]
+      properties:
+        login:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: Табельный номер пользователя (6 цифр)
+          examples: ['123456']
+        password:
+          type: string
+          format: password
+          description: Пароль от аккаунта
+
+    RegisterUserRequest:
+      type: object
+      required: [login, password, firstName, lastName, role]
+      properties:
+        login:
+          type: string
+          pattern: '^[0-9]{6}$'
+          examples: ['654321']
+        password:
+          type: string
+          format: password
+          minLength: 8
+        firstName:
+          type: string
+        lastName:
+          type: string
+        patronymic:
+          type: [string, 'null']
+        role:
+          $ref: '#/components/schemas/Role'
+
+    SessionResponse:
+      type: object
+      required: [sessionId, role]
+      properties:
+        sessionId:
+          type: string
+          examples: ['sess_9f8e7d6c5b4a3210']
+        role:
+          $ref: '#/components/schemas/Role'
+        expiresAt:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      required: [id, login, firstName, lastName, role, isBanned]
+      properties:
+        id: { type: integer }
+        login: { type: string, pattern: '^[0-9]{6}$' }
+        firstName: { type: string }
+        lastName: { type: string }
+        patronymic: { type: [string, 'null'] }
+        role: { $ref: '#/components/schemas/Role' }
+        isBanned: { type: boolean }
+
+    QueueTeacher:
+      type: object
+      required: [id, firstName, lastName]
+      properties:
+        id: { type: integer }
+        firstName: { type: string }
+        lastName: { type: string }
+        patronymic: { type: [string, 'null'] }
+
+    QueueStudent:
+      type: object
+      required: [id, firstName, lastName, queueNumber, works]
+      properties:
+        id: { type: integer }
+        firstName: { type: string }
+        lastName: { type: string }
+        patronymic: { type: [string, 'null'] }
+        works:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/Work'
+              - $ref: '#/components/schemas/StudentWork'
+        queueNumber: { type: integer }
+
+    Location:
+      type: object
+      required: [isOnline]
+      properties:
+        isOnline: { type: boolean }
+        address: { type: [string, 'null'] }
+        auditorium: { type: [string, 'null'] }
+        streamLink: { type: [string, 'null'], format: uri }
+
+    Work:
+      type: object
+      required: [number, queueId, maxPoints]
+      properties:
+        queueId: { type: integer }
+        number: { type: integer }
+        maxPoints: { type: integer }
+        name: { type: [string, 'null'] }
+
+    QueueWork:
+      type: object
+      required: [work, priority]
+      properties:
+        work: { $ref: '#/components/schemas/Work' }
+        priority: { type: integer }
+
+    StudentWork:
+      type: object
+      required: [work, artifactUrl]
+      properties:
+        work: { $ref: '#/components/schemas/Work' }
+        artifactUrl: { type: [string, 'null'], format: uri }
+
+    Queue:
+      type: object
+      required:
+        - id
+        - discipline
+        - startsAt
+        - endsAt
+        - teachers
+        - students
+        - location
+        - works
+        - isRegistrationOpened
+        - isArtifactRequired
+        - maxStudents
+        - minutesPerStudent
+        - description
+        - queueStatus
+      properties:
+        id: { type: integer }
+        discipline: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        teachers:
+          type: array
+          items: { $ref: '#/components/schemas/QueueTeacher' }
+        students:
+          type: array
+          items: { $ref: '#/components/schemas/QueueStudent' }
+        location: { $ref: '#/components/schemas/Location' }
+        works:
+          type: array
+          items: { $ref: '#/components/schemas/QueueWork' }
+        isRegistrationOpened: { type: boolean }
+        isArtifactRequired: { type: boolean }
+        maxStudents: { type: [integer, 'null'] }
+        minutesPerStudent: { type: [integer, 'null'] }
+        description: { type: [string, 'null'] }
+        queueStatus: { $ref: '#/components/schemas/QueueStatus' }
+
+    StudentQueue:
+      type: object
+      required: [queue, studentRelatedData]
+      properties:
+        queue: { $ref: '#/components/schemas/Queue' }
+        studentRelatedData:
+          type: object
+          required: [works, queueNumber, moveUsedAt, status]
+          properties:
+            works:
+              type: array
+              items: { $ref: '#/components/schemas/StudentWork' }
+            queueNumber: { type: integer }
+            moveUsedAt: { type: [string, 'null'], format: date-time }
+            status: { $ref: '#/components/schemas/ParticipantStatus' }
+
+    StudentAttempt:
+      type: object
+      required: [discipline, defendedAt, teachers, work, result, status]
+      properties:
+        discipline: { type: string }
+        defendedAt: { type: string, format: date-time }
+        teachers:
+          type: array
+          items: { $ref: '#/components/schemas/QueueTeacher' }
+        work: { $ref: '#/components/schemas/StudentWork' }
+        result: { type: [integer, 'null'] }
+        status: { $ref: '#/components/schemas/AttemptStatus' }
+
+    CreateQueueWorkItem:
+      type: object
+      required: [number, maxPoints, priority]
+      properties:
+        number: { type: integer }
+        maxPoints: { type: integer }
+        name: { type: [string, 'null'] }
+        priority: { type: integer }
+
+    CreateQueueRequest:
+      type: object
+      required:
+        - discipline
+        - startsAt
+        - endsAt
+        - teacherIds
+        - location
+        - works
+        - isRegistrationOpened
+        - isArtifactRequired
+      properties:
+        discipline: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        teacherIds:
+          type: array
+          minItems: 1
+          items: { type: integer }
+        location: { $ref: '#/components/schemas/Location' }
+        works:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/CreateQueueWorkItem' }
+        isRegistrationOpened: { type: boolean }
+        isArtifactRequired: { type: boolean }
+        maxStudents: { type: [integer, 'null'] }
+        minutesPerStudent: { type: [integer, 'null'] }
+        description: { type: [string, 'null'] }
+
+    UpdateQueueRequest:
+      type: object
+      properties:
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        location: { $ref: '#/components/schemas/Location' }
+        isRegistrationOpened: { type: boolean }
+        isArtifactRequired: { type: boolean }
+        maxStudents: { type: [integer, 'null'] }
+        minutesPerStudent: { type: [integer, 'null'] }
+        description: { type: [string, 'null'] }
+        queueStatus: { $ref: '#/components/schemas/QueueStatus' }
+
+    JoinQueueWorkItem:
+      type: object
+      required: [workNumber]
+      properties:
+        workNumber: { type: integer }
+        artifactUrl: { type: [string, 'null'], format: uri }
+
+    JoinQueueRequest:
+      type: object
+      required: [works]
+      properties:
+        works:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/JoinQueueWorkItem' }
+
+    UpdateParticipantStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: ['Waiting', 'Called', 'Defending']
+
+    WorkEvaluationItem:
+      type: object
+      required: [workNumber, result]
+      properties:
+        workNumber: { type: integer }
+        result: { type: [integer, 'null'] }
+
+    EvaluateStudentRequest:
+      type: object
+      required: [status, evaluations]
+      properties:
+        status: { $ref: '#/components/schemas/AttemptStatus' }
+        evaluations:
+          type: array
+          items: { $ref: '#/components/schemas/WorkEvaluationItem' }
+
+    SwitchRequest:
+      type: object
+      required:
+        - id
+        - queueId
+        - fromStudentId
+        - toStudentId
+        - fromQueueNumber
+        - toQueueNumber
+        - status
+        - createdAt
+      properties:
+        id: { type: integer }
+        queueId: { type: integer }
+        fromStudentId: { type: integer }
+        toStudentId: { type: integer }
+        fromQueueNumber: { type: integer, minimum: 3 }
+        toQueueNumber: { type: integer, minimum: 3 }
+        status: { $ref: '#/components/schemas/SwitchRequestStatus' }
+        createdAt: { type: string, format: date-time }
