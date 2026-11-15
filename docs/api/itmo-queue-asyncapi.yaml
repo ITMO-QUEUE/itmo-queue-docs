@@ -1,0 +1,314 @@
+asyncapi: 3.0.0
+info:
+  title: ITMO Queue Realtime API (WebSockets & SSE)
+  version: 1.0.0
+  description: |
+    Спецификация событий реального времени для электронной очереди:
+    - **WebSockets (`/ws/me`)**: двусторонний личный канал студента для обмена местами в очереди (`switch.*`).
+    - **SSE (`GET /queues/{queueId}/stream`)**: односторонний поток серверных событий для динамического обновления очереди.
+
+servers:
+  production:
+    host: api.itmo-queue.example.com
+    protocol: wss
+    description: Основной сервер WebSockets
+    security:
+      - $ref: '#/components/securitySchemes/SessionAuth'
+
+channels:
+  userSwitchChannel:
+    address: /ws/me
+    description: |
+      Персональный WebSocket-канал авторизованного пользователя.
+      Авторизация выполняется по HttpOnly cookie `sessionId` при HTTP-рукопожатии.
+    messages:
+      switchPropose:
+        $ref: '#/components/messages/SwitchPropose'
+      switchAccept:
+        $ref: '#/components/messages/SwitchAccept'
+      switchReject:
+        $ref: '#/components/messages/SwitchReject'
+      switchCancel:
+        $ref: '#/components/messages/SwitchCancel'
+      switchIncoming:
+        $ref: '#/components/messages/SwitchIncoming'
+      switchResolved:
+        $ref: '#/components/messages/SwitchResolved'
+      wsError:
+        $ref: '#/components/messages/WsError'
+
+  queueStreamChannel:
+    address: /queues/{queueId}/stream
+    description: |
+      SSE-поток (`Content-Type: text/event-stream`) для всех участников и зрителей конкретной очереди.
+    parameters:
+      queueId:
+        description: Идентификатор очереди
+    messages:
+      queueUpdated:
+        $ref: '#/components/messages/QueueUpdated'
+      participantStatusChanged:
+        $ref: '#/components/messages/ParticipantStatusChanged'
+      queueStatusChanged:
+        $ref: '#/components/messages/QueueStatusChanged'
+
+operations:
+  sendSwitchPropose:
+    action: send
+    channel:
+      $ref: '#/channels/userSwitchChannel'
+    summary: Отправить предложение об обмене местами
+    messages:
+      - $ref: '#/channels/userSwitchChannel/messages/switchPropose'
+
+  sendSwitchAccept:
+    action: send
+    channel:
+      $ref: '#/channels/userSwitchChannel'
+    summary: Принять входящее предложение об обмене
+    messages:
+      - $ref: '#/channels/userSwitchChannel/messages/switchAccept'
+
+  sendSwitchReject:
+    action: send
+    channel:
+      $ref: '#/channels/userSwitchChannel'
+    summary: Отклонить входящее предложение об обмене
+    messages:
+      - $ref: '#/channels/userSwitchChannel/messages/switchReject'
+
+  sendSwitchCancel:
+    action: send
+    channel:
+      $ref: '#/channels/userSwitchChannel'
+    summary: Отменить своё исходящее предложение об обмене
+    messages:
+      - $ref: '#/channels/userSwitchChannel/messages/switchCancel'
+
+  receiveSwitchIncoming:
+    action: receive
+    channel:
+      $ref: '#/channels/userSwitchChannel'
+    summary: Получить входящее предложение об обмене местами
+    messages:
+      - $ref: '#/channels/userSwitchChannel/messages/switchIncoming'
+
+  receiveSwitchResolved:
+    action: receive
+    channel:
+      $ref: '#/channels/userSwitchChannel'
+    summary: Получить результат рассмотрения заявки (принята, отклонена, отменена или истекла)
+    messages:
+      - $ref: '#/channels/userSwitchChannel/messages/switchResolved'
+
+  receiveWsError:
+    action: receive
+    channel:
+      $ref: '#/channels/userSwitchChannel'
+    summary: Получить ошибку обработки команды WebSocket
+    messages:
+      - $ref: '#/channels/userSwitchChannel/messages/wsError'
+
+  receiveQueueUpdates:
+    action: receive
+    channel:
+      $ref: '#/channels/queueStreamChannel'
+    summary: Получать события обновления очереди по SSE
+    messages:
+      - $ref: '#/channels/queueStreamChannel/messages/queueUpdated'
+      - $ref: '#/channels/queueStreamChannel/messages/participantStatusChanged'
+      - $ref: '#/channels/queueStreamChannel/messages/queueStatusChanged'
+
+components:
+  securitySchemes:
+    SessionAuth:
+      type: apiKey
+      in: cookie
+      name: sessionId
+
+  messages:
+    SwitchPropose:
+      name: switch.propose
+      title: Предложение поменяться местами (Клиент -> Сервер)
+      summary: Инициатор предлагает обмен участнику на позиции targetQueueNumber (>= 3)
+      payload:
+        type: object
+        required: [type, queueId, targetQueueNumber]
+        properties:
+          type:
+            type: string
+            const: switch.propose
+          queueId:
+            type: integer
+          targetQueueNumber:
+            type: integer
+            minimum: 3
+
+    SwitchAccept:
+      name: switch.accept
+      title: Принятие обмена (Клиент -> Сервер)
+      payload:
+        type: object
+        required: [type, requestId]
+        properties:
+          type:
+            type: string
+            const: switch.accept
+          requestId:
+            type: integer
+
+    SwitchReject:
+      name: switch.reject
+      title: Отклонение обмена (Клиент -> Сервер)
+      payload:
+        type: object
+        required: [type, requestId]
+        properties:
+          type:
+            type: string
+            const: switch.reject
+          requestId:
+            type: integer
+
+    SwitchCancel:
+      name: switch.cancel
+      title: Отмена исходящего запроса (Клиент -> Сервер)
+      payload:
+        type: object
+        required: [type, requestId]
+        properties:
+          type:
+            type: string
+            const: switch.cancel
+          requestId:
+            type: integer
+
+    SwitchIncoming:
+      name: switch.incoming
+      title: Входящее предложение об обмене (Сервер -> Клиент)
+      payload:
+        type: object
+        required: [type, request, expiresAt]
+        properties:
+          type:
+            type: string
+            const: switch.incoming
+          request:
+            $ref: '#/components/schemas/SwitchRequestPayload'
+          expiresAt:
+            type: string
+            format: date-time
+            description: Время автоматического истечения заявки (обычно +30-60 сек)
+
+    SwitchResolved:
+      name: switch.resolved
+      title: Итог по заявке на обмен (Сервер -> Клиент)
+      payload:
+        type: object
+        required: [type, request]
+        properties:
+          type:
+            type: string
+            const: switch.resolved
+          request:
+            $ref: '#/components/schemas/SwitchRequestPayload'
+
+    WsError:
+      name: error
+      title: Ошибка WebSocket-команды (Сервер -> Клиент)
+      payload:
+        type: object
+        required: [type, code, message]
+        properties:
+          type:
+            type: string
+            const: error
+          code:
+            type: string
+            enum: [INVALID_POSITION, NOT_WAITING, ALREADY_PENDING, NOT_FOUND, FORBIDDEN]
+          message:
+            type: string
+
+    QueueUpdated:
+      name: queue.updated
+      title: Полное или частичное обновление списка участников очереди (SSE)
+      payload:
+        type: object
+        required: [event, queueId, students]
+        properties:
+          event:
+            type: string
+            const: queue.updated
+          queueId:
+            type: integer
+          students:
+            type: array
+            items:
+              type: object
+              required: [id, firstName, lastName, queueNumber]
+              properties:
+                id: { type: integer }
+                firstName: { type: string }
+                lastName: { type: string }
+                patronymic: { type: [string, 'null'] }
+                queueNumber: { type: integer }
+
+    ParticipantStatusChanged:
+      name: participant.status_changed
+      title: Изменение статуса участника (например, вызов Called) (SSE)
+      payload:
+        type: object
+        required: [event, queueId, studentId, status]
+        properties:
+          event:
+            type: string
+            const: participant.status_changed
+          queueId:
+            type: integer
+          studentId:
+            type: integer
+          status:
+            type: string
+            enum: ['Waiting', 'Called', 'Defending', 'Accepted', 'Absent']
+
+    QueueStatusChanged:
+      name: queue.status_changed
+      title: Изменение статуса самой очереди (Active, Paused, Completed) (SSE)
+      payload:
+        type: object
+        required: [event, queueId, queueStatus, isRegistrationOpened]
+        properties:
+          event:
+            type: string
+            const: queue.status_changed
+          queueId:
+            type: integer
+          queueStatus:
+            type: string
+            enum: ['Preregistration', 'Active', 'Paused', 'Completed']
+          isRegistrationOpened:
+            type: boolean
+
+  schemas:
+    SwitchRequestPayload:
+      type: object
+      required:
+        - id
+        - queueId
+        - fromStudentId
+        - toStudentId
+        - fromQueueNumber
+        - toQueueNumber
+        - status
+        - createdAt
+      properties:
+        id: { type: integer }
+        queueId: { type: integer }
+        fromStudentId: { type: integer }
+        toStudentId: { type: integer }
+        fromQueueNumber: { type: integer, minimum: 3 }
+        toQueueNumber: { type: integer, minimum: 3 }
+        status:
+          type: string
+          enum: ['Pending', 'Accepted', 'Rejected', 'Cancelled', 'Expired']
+        createdAt: { type: string, format: date-time }
